@@ -1,0 +1,375 @@
+<!DOCTYPE  html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ιστοσελίδα για την Αξιολόγηση Εκπαιδευτικού Ιδρύματος με βάση Στόχους Βιώσιμης Ανάπτυξης(SDGs)</title>
+
+    <!-- Εισαγωγή Bootstrap CSS για τη μορφοποίηση -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        .sdg-column {
+            width: 12%; /* Ρυθμίστε το πλάτος όπως χρειάζεται */
+        }
+        .year-column {
+            width: 15%; /* Ρυθμίστε το πλάτος όπως χρειάζεται */
+        }
+        h2 { text-align: center; }
+    </style>
+   
+    <!-- Εισαγωγή βιβλιοθηκών JavaScript -->
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Απενεργοποίηση του κουμπιού υποβολής και του κουμπιού τυχαίας εισαγωγής μετά την υποβολή της φόρμας
+        function disableButtons() {
+            document.getElementById("submit-button").disabled = true;
+            document.getElementById("generateRandom").disabled = true;
+        }
+
+        $(document).ready(function() {
+            $('#sdgForm').on('submit', function() {
+                disableButtons();
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Ιστοσελίδα για την Αξιολόγηση Εκπαιδευτικού Ιδρύματος με βάση Στόχους Βιώσιμης Ανάπτυξης(SDGs)</h2>
+
+
+       <!-- Φόρμα υποβολής δεδομένων -->
+        <form id="sdgForm" method="POST" action="/" onsubmit="disableSubmitButton()">
+            <input type="hidden" name="evaluation_year" value="2023">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th class="sdg-column">SDG</th>
+                        <th>Δείκτης</th>
+                        <th>Βάρος</th> 
+                        <th class="year-column">Έτος Αναφοράς</th>
+                        <th class="year-column">Έτος Αξιολόγησης</th>
+                        <th>Βαθμολογία</th>
+                        <th>Συνολική Βαθμολογία</th>
+                        <th>Σταθμισμένη Βαθμολογία</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Βρόχος για κάθε SDG και τους δείκτες του -->
+                    {% for sdg, indicators in sdg_indicators.items() %}
+                        <tr>
+                            <td colspan="8" class="font-weight-bold sdg-column">{{ sdg }}</td>
+                        </tr>
+                        {% for indicator in indicators %}
+                            <tr id="indicator-{{ indicator }}">
+                                <td></td>  <!-- Κενό κελί ως placeholder για τη στήλη SDG-->
+                                <td>{{ indicator }}</td>
+                                <td>{{ indicator_weights[indicator] }}</td> <!-- Display weight from database -->
+                                <!-- Dropdown για το έτος αναφοράς -->
+                                <td class="year-column">
+                                    {% if indicator in ["I3", "I8", "I9", "I13", "I17", "I18", "I24", "I30"] %}
+                                        <select class="form-control" name="refyear_{{ indicator }}" required>
+                                            <option value="" disabled selected>Επιλέξτε έτος</option>
+                                            <option value="2020">2020</option>
+                                            <option value="2021">2021</option>
+                                            <option value="2022">2022</option>
+                                            <option value="2023">2023</option>
+                                            <option value="2024">2024</option>
+                                            <option value="2025">2025</option>
+                                        </select>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Dropdown για το έτος αξιολόγησης -->
+                                <td class="year-column">
+                                    <select class="form-control" name="evalyear_{{ indicator }}" required>
+                                        <option value="" disabled selected>Επιλέξτε έτος</option>
+                                        <option value="2020">2020</option>
+                                        <option value="2021">2021</option>
+                                        <option value="2022">2022</option>
+                                        <option value="2023">2023</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2025">2025</option>
+                                    </select>
+                                </td>
+                                
+                               
+                                <!-- Εισαγωγή για τη βαθμολογία σε δείκτες με διαίρεση, εμφάνίζεται τι αντιπροσωπεύει κάθε κλάσμα--> 
+                                <td>
+                                    {% if indicator in ["I3", "I8", "I9", "I13", "I17", "I18", "I24", "I30"] %}
+                                        <input type="number" class="form-control" name="score_{{ indicator }}_numerator" placeholder="Αριθμητής" required>
+                                        <input type="number" class="form-control mt-1" name="score_{{ indicator }}_denominator" placeholder="Παρονομαστής" required>
+
+                                        {% if indicator == "I3" %}
+                                            <small class="form-text text-muted">κιλά / αριθμός πληθυσμού</small>
+                                        {% elif indicator == "I8" %}
+                                            <small class="form-text text-muted">αριθμός πρωτοετών φοιτητών / αριθμός αποφοιτήσαντων</small>
+                                        {% elif indicator == "I9" %}
+                                            <small class="form-text text-muted">αριθμός γυναικείων ανώτερων ακαδημαϊκών / αριθμός ανώτερων ακαδημαϊκώ</small>
+                                        {% elif indicator == "I13" %}
+                                            <small class="form-text text-muted">ποσότητα νερού σε κυβικά μέτρα / πληθυσμός πανεπιστημιούπολης</small>
+                                        {% elif indicator == "I17" %}
+                                            <small class="form-text text-muted">συνολική ενέργεια που χρησιμοποιείται σε Gigajoule (GJ) / επιφάνεια των κτιρίων του πανεπιστημίου σε τετραγωνικά μέτρα (m²)</small>
+                                        {% elif indicator == "I18" %}
+                                            <small class="form-text text-muted">έσοδα έρευνας / αριθμός ακαδημαϊκού προσωπικού</small>
+                                        {% elif indicator == "I24" %}
+                                            <small class="form-text text-muted">ποσότητα ανακυκλωμένων αποβλήτων / ποσότητα παραγόμενων αποβλήτων</small>
+                                        {% elif indicator == "I30" %}
+                                            <small class="form-text text-muted">αριθμός δημοσιεύσεων / αριθμός ακαδημαϊκού προσωπικού</small>
+                                        {% endif %}
+                                    {% elif indicator in ["I10","I11","I12","I14","I15","I16","I19","I21","I22","I23","I26","I27","I28","I29","I33","I34"] %}
+                                        <select class="form-control" name="score_{{ indicator }}" required>
+                                            <option value="0">0</option>
+                                            <option value="1">1</option>
+                                        </select>
+                                    {% else %}
+                                        <select class="form-control" name="score_{{ indicator }}" required>
+                                            <option value="0">0</option>
+                                            <option value="0.25">0.25</option>
+                                            <option value="1">1</option>
+                                        </select>
+                                    {% endif %}
+                                </td>
+                                <!-- Placeholder για τη συνολική βαθμολογία -->
+                                <td id="total-{{ indicator.lower() }}"></td>
+
+                                <!-- Placeholder για τη σταθμισμένη βαθμολογία -->
+                                <td id="result-{{ indicator.lower() }}"></td>
+                            </tr>
+                        {% endfor %}
+                        {% if not indicators %}
+                            <tr>
+                                <td colspan="8">Δεν υπάρχουν δείκτες</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+
+
+                    <!-- Γραμμή για την τελική αξιολόγηση -->
+                    <tr>
+                        <td colspan="7" class="font-weight-bold sdg-column">Τελική Αξιολόγηση</td>
+                        <td id="overall-score" class="font-weight-bold"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Κουμπιά για τυχαία εισαγωγή και υποβολή -->
+            <button type="button" id="generateRandom" class="btn btn-secondary">Εισαγωγή τυχαίων τιμών</button>
+            <button type="submit" id="submit-button" class="btn btn-primary">Υποβολή αξιολόγησης</button>
+        </form>
+
+        <!-- Χρώματα και τίτλος διαγράμματος -->
+        <div id="chartContainer" style="display: flex; align-items: flex-start; margin-top: 30px;">
+            <div style="text-align: center; width: 100%;">
+                <h3 id="chartTitle" style="display: none;">Οπτική αναπαράσταση απόδοσης κριτηρίων</h3>
+                <canvas id="performanceChart" width="400" height="200"></canvas>
+            </div>
+            <div id="chartLegend" style="margin-left: 20px; font-size: 14px; display: none; flex-direction: column; gap: 8px;">
+                <div style="display: flex; align-items: center;">
+                    <span style="color: green; font-size: 18px; margin-right: 8px;">&#9679;</span>
+                    <span>Καλή απόδοση</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span style="color: orange; font-size: 18px; margin-right: 8px;">&#9679;</span>
+                    <span>Μέτρια απόδοση</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span style="color: red; font-size: 18px; margin-right: 8px;">&#9679;</span>
+                    <span>Χαμηλή απόδοση</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>    
+
+        // Κουμπί random input (javascript) για γρήγορο debugging
+        // Αρχικοποίηση tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+        
+        // Δημιουργία τυχαίων τιμών για τα πεδία της φόρμας 
+        $("#generateRandom").click(function(){
+            // Για τα dropdowns με τα έτη αναφοράς και αξιολόγησης
+            const years = ["2020","2021","2022","2023","2024","2025"];
+            $("select[name^='refyear_'], select[name^='evalyear_']").each(function(){
+                const randomYear = years[Math.floor(Math.random() * years.length)];
+                $(this).val(randomYear);
+            });
+            
+            // Για τα αριθμητικά πεδία (arithmitis & paronomastis)
+            $("input[type='number']").filter(function(){
+                // Στόχευση μόνο των πεδίων που έχουν όνομα που τελειώνει σε _arithmitis ή _paronomastis
+                return $(this).attr("name").endsWith("_arithmitis") || $(this).attr("name").endsWith("_paronomastis");
+            }).each(function(){
+                // Δημιουργία τυχαίου ακέραιου αριθμού μεταξύ 1 και 100
+                const randomVal = Math.floor(Math.random() * 100) + 1;
+                $(this).val(randomVal);
+            });
+            
+            // Για τα select ratings που δεν σχετίζονται με έτη αναφοράς και αξιολόγησης
+            $("select.form-control").each(function(){
+                const name = $(this).attr("name");
+                if (!name.startsWith("refyear_") && !name.startsWith("evalyear_") && name !== "evaluation_year") {
+                    const options = $(this).find("option").not("[disabled]");
+                    const randomOption = options.eq(Math.floor(Math.random() * options.length)).val();
+                    $(this).val(randomOption);
+                }
+            });
+
+            // Για τα πεδία εισαγωγής με όνομα που ξεκινά με 'score_'
+            $("input[name^='score_']").each(function(){
+                const randomValue = (Math.floor(Math.random() * 100) + 1).toString();
+                $(this).val(randomValue);
+            });
+        });
+
+        // ΡΑΥΔΟΓΡΑΜΜΑ ΚΑΙ FEEDBACK-------------------------------------------------------------
+        // Ορισμός ομάδων δεικτών και κατωφλίων
+        const group1 = ["I1", "I2", "I4", "I5", "I6", "I7", "I20", "I25", "I31", "I32"];
+        const group2 = ["I10", "I11", "I12", "I14", "I15", "I16", "I19", "I21", "I22", "I23", "I26", "I27", "I28", "I29", "I33", "I34"];
+        
+        // Συνάρτηση για τον καθορισμό του χρώματος της μπάρας με βάση τη σταθμισμένη βαθμολογία και το αντίστοιχο κατώφλι
+        function getColor(indicator, weighted) {
+            let threshold = group1.includes(indicator) ? 2.25 : (group2.includes(indicator) ? 2.0 : 1);
+            if(weighted >= threshold * 0.75) {
+                return 'green';   // Καλή απόδοση
+            } else if(weighted >= threshold * 0.5) {
+                return 'orange';  // Μέτρια απόδοση
+            } else {
+                return 'red';     // Χαμηλή απόδοση
+            }
+        }
+
+        $('#sdgForm').on('submit', function(event) {
+            event.preventDefault(); // Αποτροπή κανονικής υποβολής φόρμας
+            var formData = $(this).serialize();
+            $.ajax({
+                url: "/",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+                    console.log("AJAX response:", response);
+                    if (response.status === "success" && response.final_scores) {
+                        let overall = 0;
+                        
+                        // Προετοιμασία πινάκων για το διάγραμμα
+                        let labels = [];
+                        let dataValues = [];
+                        let backgroundColors = [];
+                        
+                        // Ενημέρωση των κελιών του πίνακα με τα αποτελέσματα
+                        for (let indicator in response.final_scores) {
+                            const data = response.final_scores[indicator];
+                            const totalCell = $("#total-" + indicator.toLowerCase());
+                            const weightedCell = $("#result-" + indicator.toLowerCase());
+                            
+                            totalCell.text(data.total_score);
+                            weightedCell.text(data.weighted_score);
+                            
+                            // Άθροιση συνολικής σταθμισμένης βαθμολογίας
+                            overall += parseFloat(data.weighted_score);
+                            
+                            // Προσθήκη εικονιδίου ανατροφοδότησης
+                            if (group1.includes(indicator) || group2.includes(indicator)) {
+                                let threshold = group1.includes(indicator) ? 2.25 : 2.0; // Κατώφλια για τις ομάδες δεικτών
+                                let tooltipText = "MORE THINGS CAN BE DONE";
+                                
+                                if (parseFloat(data.total_score) <= threshold) {
+                                    if (totalCell.find(".feedback-icon").length === 0) {
+                                        totalCell.append(" <span class='feedback-icon' data-toggle='tooltip' title='" + tooltipText + "' style='cursor: pointer;'>&#9888;</span>");
+                                    }
+                                } else {
+                                    totalCell.find(".feedback-icon").remove();
+                                }
+                            } else {
+                                // Αφαίρεση feedback icon
+                                totalCell.find(".feedback-icon").remove();
+                            }
+                            
+                            // Προετοιμασία πινάκων για το διάγραμμα
+                            labels.push(indicator);
+                            let weightedNum = parseFloat(data.weighted_score);
+                            dataValues.push(weightedNum);
+                            backgroundColors.push(getColor(indicator, weightedNum));
+                        }
+                        
+                        // Εμφανιση της συνολικής βαθμολογίας με 3 δεκαδικά ψηφία
+                        $("#overall-score").text(overall.toFixed(3));
+                        
+                        
+                        // Επαναρχικοποίηση των tooltips του bootstrap για τα νέα εικονίδια ανατροφοδότησης
+                        $('[data-toggle="tooltip"]').tooltip();
+                        
+                        // Δημιουργία/ενημέρωση του διαγράμματος για τη συνολική απόδοση
+                        const ctx = document.getElementById('performanceChart').getContext('2d');
+                        
+                        // Ταξινόμηση των δεδομένων για τη δημιουργία του διαγράμματος
+                        const sortedIndices = labels
+                            .map((label, index) => ({ label, index }))
+                            // Ταξινόμηση των δεικτών σε αύξουσα σειρά
+                            .sort((a, b) => parseInt(a.label.slice(1)) - parseInt(b.label.slice(1)))
+                            .map(({ index }) => index);
+
+                        labels = sortedIndices.map(i => labels[i]);
+                        dataValues = sortedIndices.map(i => dataValues[i]);
+                        backgroundColors = sortedIndices.map(i => backgroundColors[i]);
+
+                        // Δημιουργία του διαγράμματος
+                        if (window.performanceChartInstance) {
+                            window.performanceChartInstance.destroy();
+                        }
+                        window.performanceChartInstance = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Απόδοση',
+                                    data: dataValues,
+                                    backgroundColor: backgroundColors
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Σταθμισμένη Βαθμολογία'
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                return context.parsed.y;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        
+                        // Εμφάνιση του τίτλου και του legend του διαγράμματος
+                        $('#chartTitle').css("display", "block");
+                        $('#chartLegend').css("display", "flex");
+                    } else {
+                        alert("Submission error: " + response.message);
+                    }
+                },
+                // Εμφάνιση μηνύματος λάθους σε περίπτωση αποτυχίας AJAX
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("AJAX error:", textStatus, errorThrown);
+                    alert("An error occurred while submitting the form.");
+                }
+            });
+        });
+    </script>  
+</body>
+</html>
